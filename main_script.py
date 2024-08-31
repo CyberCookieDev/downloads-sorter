@@ -2,11 +2,13 @@
 from pathlib import Path
 import os
 import shutil
+import send2trash
+import re
 
 # All folder names/types
 
 folders = ['Images', 'Documents', 'Ebooks', 'Videos', 'Audio', 'Programs', 'Fonts', 'Code',
-           'Archive', 'Other']
+           'Archive',]
 
 # All extensions to sort them to corresponding folders
 
@@ -36,12 +38,15 @@ font_extensions = ['vfb', 'pfa', 'fnt', 'vlw', 'jfproj', 'woff', 'sfd', 'pfb']
 # Ask if user wants to sort downloads or custom path using some simple logic.
 ask_if_custom = input('Sort downloads or some custom location? Type downloads for downloads and custom for custom. ')
 custom = True
-if ask_if_custom in ['downloads', 'custom']:
-    if ask_if_custom == 'downloads':
-        custom = False
-    else:
-        custom = True
-if custom == False:
+while ask_if_custom not in ['downloads', 'custom']:
+    ask_if_custom = input('Sort downloads or some custom location? Type downloads for downloads and custom for custom. ')
+
+if ask_if_custom == 'downloads':
+    custom = False
+else:
+    custom = True
+
+if not custom:
     downloads_path = str(Path.home() / "Downloads")
     downloads_list = os.listdir(f'{downloads_path}')
 else:
@@ -56,7 +61,6 @@ else:
 
 
 # Create folders, first check if they exist to not have duplicates
-
 for folder_type in folders:
 
     mypath = str(f'{downloads_path}' + '/' + f'{folder_type}')
@@ -64,32 +68,67 @@ for folder_type in folders:
 
         os.mkdir(mypath)
 
+# Whole logic behind checking if file exists, numbering it if it already exists and you want to keep it, or if you don't, sending it to trash
+def replace_or_keep(folder_name, file):
+
+    # Checks if file already exists
+    if not os.path.exists(downloads_path + '/' + folder_name + '/' + file):
+        shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + folder_name))
+    else:
+        # If it exists, it asks for input if you want to keep both, or delete the older one
+        replace_keep = input(f'{file} already exist. Do you want to replace it or keep both? replace/keep: ')
+        while replace_keep not in ['replace', 'keep']:
+            replace_keep = input(f'{file} already exist. Do you want to replace it or keep both? replace/keep: ')
+
+        # Logic for sending to trash
+        if replace_keep == 'replace':
+            send2trash.send2trash(downloads_path + '/' + folder_name + '/' + file)
+            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + folder_name))
+
+        # Regex to detect if file has a number, for example main_script(1).py
+        else:
+            file_path = (downloads_path + '/' + folder_name + '/' + file)
+            file_path_reversed = file_path[::-1]
+            digit_search = re.search('(\d+)', file_path_reversed)
+            digit_search_span = digit_search.span
+            if digit_search is not None and digit_search_span == '0':
+                digit_to_edit = digit_search.group()[::-1]
+                digit = digit_to_edit[1:-2]
+                file_name = os.rename(downloads_path + '/' + file, downloads_path + '/' + split_tup[0] + f'({digit})' + extension)
+                shutil.move(file_name, downloads_path + '/' + folder_name + '/' + split_tup[0] + f'({digit})' + extension)
+            else:
+                os.rename(downloads_path + '/' + file, downloads_path + '/' + split_tup[0] + '(1)' + extension)
+                shutil.move(downloads_path + '/' + split_tup[0] + '(1)' + extension, downloads_path + '/' + folder_name + '/' + split_tup[0] + '(1)' + extension)
+
 # For loop to sort and then transfer files into correct folders.
 
 for file in downloads_list:
+
     split_tup = os.path.splitext(file)
     extension = split_tup[1]
     extension = extension.replace('.', '')
-    if not os.path.isdir(str(downloads_path + '/' + file)):
-        if extension.lower() in code_extensions:
-            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + 'Code'))
-        elif extension.lower() in ebook_extensions:
-            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + 'Ebooks'))
-        elif extension.lower() in audio_extensions:
-            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + 'Audio'))
-        elif extension.lower() in image_extensions:
-            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + 'Images'))
-        elif extension.lower() in document_extensions:
-            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + 'Documents'))
-        elif extension.lower() in program_extensions:
-            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + 'Programs'))
-        elif extension.lower() in video_extensions:
-            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + 'Videos'))
-        elif extension.lower() in font_extensions:
-            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + 'Fonts'))
-        elif extension.lower() in archive_extensions:
-            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + 'Archive'))
-    else:
-        os.mkdir(str(Path.home() / "Downloads" / 'File Duplicates'))
-        shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + 'File Duplicates'))
-# Gotta check if file is not in one of the created folders and possibly remove dupes
+    if extension.lower() in code_extensions:
+        replace_or_keep('Code', file)
+
+    elif extension.lower() in ebook_extensions:
+        replace_or_keep('Ebooks', file)
+
+    elif extension.lower() in audio_extensions:
+        replace_or_keep('Audio', file)
+
+    elif extension.lower() in image_extensions:
+        replace_or_keep('Images', file)
+    elif extension.lower() in document_extensions:
+        replace_or_keep('Documents', file)
+
+    elif extension.lower() in program_extensions:
+        replace_or_keep('Programs', file)
+
+    elif extension.lower() in video_extensions:
+        replace_or_keep('Videos', file)
+
+    elif extension.lower() in font_extensions:
+        replace_or_keep('Fonts', file)
+
+    elif extension.lower() in archive_extensions:
+        replace_or_keep('Archive', file)
