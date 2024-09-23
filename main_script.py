@@ -43,20 +43,29 @@ font_extensions = ['vfb', 'pfa', 'fnt', 'vlw', 'jfproj', 'woff', 'sfd', 'pfb']
 with Progress(auto_refresh=True, refresh_per_second=10) as progress:
 
     # Added markdown to make text look nicer
+
     MARKDOWN = """
     # Downloads Sorter
 
-    Please enter one of commands below or type run to run the program
+    Please enter one of the commands below or type 'run' to execute the program:
 
-    - Enter run to run the script
-    - Enter custom to change directory that will be sorted
-    - Enter about to get information about project and credits
-    
-    License: MIT License
-    Author: CyberCookieDev
+    - **Enter 'run'** to run the script.
+    - **Enter 'custom'** to change the directory that will be sorted.
+    - **Enter 'about'** to get information about the project and credits.
+
+    ---
+
+    **License**: MIT License  
+    **Author**: CyberCookieDev
     """
+
+    # Initialize console object
     console = Console()
+
+    # Parse the markdown
     md = Markdown(MARKDOWN)
+
+    # Render the markdown in the console
     console.print(md)
 
     # Globally declaring downloads path and download list
@@ -66,21 +75,7 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
     # Ask if user wants to sort downloads or custom path using some simple logic.
 
     def default_custom():
-        ask_if_custom = input('Sort downloads or some custom location? Type downloads for downloads and custom for custom. ')
-        custom = True
 
-        while ask_if_custom not in ['downloads', 'custom']:
-            ask_if_custom = input('Sort downloads or some custom location? Type downloads for downloads and custom for custom. ')
-
-        if ask_if_custom == 'downloads':
-            custom = False
-        else:
-            custom = True
-        # If user wants downloads
-        if not custom:
-            pass
-        # If user wants a custom path
-        else:
             while True:
                 ask_for_path = input('Enter your path to sort: ')
                 if os.path.isdir(ask_for_path) is False:
@@ -92,13 +87,10 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
                     downloads_list = os.listdir(f'{ask_for_path}')
                     break
 
-    # Create folders, first check if they exist to not have duplicates
-
-    current_task = progress.add_task('[green]Creating folders...', total=len(folders), completed_style = 'green')
-
-
     # Create folders if they don't exist to avoid duplicates
+
     def create_folders(folders, download_path):
+        print('Creating folders...')
         for folder_type in folders:
             mypath = os.path.join(download_path, folder_type)
             if not os.path.isdir(mypath):
@@ -106,7 +98,6 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
                 print(f"Created folder: {mypath}")
             else:
                 print(f"Folder already exists: {mypath}")
-        progress.update(current_task, advance=1)
 
     # Whole logic behind removing file duplicates if they exist in path or renaming the file you are moving.
 
@@ -143,12 +134,11 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
                     os.rename(downloads_path + '\\' + file, downloads_path + '\\' + split_tup[0] + '(1)' + extension)
                     shutil.move(downloads_path + '\\' + split_tup[0] + '(1)' + extension, downloads_path + '\\' + folder_name + '\\' + split_tup[0] + '(1)' + extension)
 
-    # Create a task to show a progress bar
-
-    task_id = progress.add_task('[green]Sorting files...', total=len(downloads_list), completed_style='green')
 
     # Sort files to destination and use the replace_or_keep to not have.
+
     def run():
+        task_id = progress.add_task('[green]Sorting files...', total=len(downloads_list), completed_style='green')
         global files_sorted
         global files_unsorted
         global files_sent2trash
@@ -251,3 +241,4 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
     print(f'Files sent to trash: {files_sent2trash}')
     print(frg.GREEN + 'Process ended succesfully')
     print(frg.WHITE + '(Note that folders count as unsorted files)')
+
