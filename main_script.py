@@ -6,7 +6,8 @@ import send2trash
 import re
 from colorama import Fore as frg,init as init
 from rich.progress import Progress
-import time
+from rich.console import Console
+from rich.markdown import Markdown
 
 # All folder names/types
 
@@ -41,58 +42,69 @@ font_extensions = ['vfb', 'pfa', 'fnt', 'vlw', 'jfproj', 'woff', 'sfd', 'pfb']
 # Use progress for progress bars
 
 with Progress(auto_refresh=True, refresh_per_second=10) as progress:
+    MARKDOWN = """
+    # Downloads Sorter
 
+    Please enter one of commands below or type run to run the program
+
+    - Enter run to run the script
+    - Enter custom to change directory that will be sorted
+    - Enter about to get information about project and credits
+    
+    License: MIT License
+    Author: CyberCookieDev
+    """
+    console = Console()
+    md = Markdown(MARKDOWN)
+    console.print(md)
     # Ask if user wants to sort downloads or custom path using some simple logic.
 
-    ask_if_custom = input('Sort downloads or some custom location? Type downloads for downloads and custom for custom. ')
-    custom = True
-
-    while ask_if_custom not in ['downloads', 'custom']:
+    downloads_path = str(Path.home() / "Downloads")
+    downloads_list = os.listdir(f'{downloads_path}')
+    def default_custom():
         ask_if_custom = input('Sort downloads or some custom location? Type downloads for downloads and custom for custom. ')
-
-    if ask_if_custom == 'downloads':
-        custom = False
-    else:
         custom = True
-    # If user wants downloads
-    if not custom:
-        downloads_path = str(Path.home() / "Downloads")
-        downloads_list = os.listdir(f'{downloads_path}')
-    # If user wants a custom path
-    else:
-        while True:
-            ask_for_path = input('Enter your path to sort: ')
-            if os.path.isdir(ask_for_path) is False:
-                pass
-            else:
-                downloads_path = str(ask_for_path)
-                downloads_list = os.listdir(f'{ask_for_path}')
-                break
+
+        while ask_if_custom not in ['downloads', 'custom']:
+            ask_if_custom = input('Sort downloads or some custom location? Type downloads for downloads and custom for custom. ')
+
+        if ask_if_custom == 'downloads':
+            custom = False
+        else:
+            custom = True
+        # If user wants downloads
+        if not custom:
+            downloads_path = str(Path.home() / "Downloads")
+            downloads_list = os.listdir(f'{downloads_path}')
+        # If user wants a custom path
+        else:
+            while True:
+                ask_for_path = input('Enter your path to sort: ')
+                if os.path.isdir(ask_for_path) is False:
+                    pass
+                else:
+                    downloads_path = str(ask_for_path)
+                    downloads_list = os.listdir(f'{ask_for_path}')
+                    break
 
     # Create folders, first check if they exist to not have duplicates
 
     current_task = progress.add_task('[green]Creating folders...', total=len(folders), completed_style = 'green')
     for folder_type in folders:
-
-        mypath = str(f'{downloads_path}' + '/' + f'{folder_type}')
+        mypath = os.path.join(downloads_path, folder_type)
         if not os.path.isdir(mypath):
 
             os.mkdir(mypath)
         progress.update(current_task, advance=1)
 
-    # All file statistics
-
-    files_sent2trash = 0
-    files_sorted = 0
-    files_unsorted = 0
 
     # Whole logic behind removing file duplicates if they exist in path or renaming the file you are moving.
     def replace_or_keep(folder_name, file):
         global files_sent2trash
 
         # Checks if file already exists
-        if not os.path.exists(downloads_path + '/' + folder_name + '/' + file):
-            shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + folder_name))
+        if not os.path.exists(downloads_path + '\\' + folder_name + '\\' + file):
+            shutil.move(str(downloads_path + '\\' + file), str(downloads_path + '\\' + folder_name))
         else:
             # If it exists, it asks for input if you want to keep both, or delete the older one
             replace_keep = input(f'{file} already exist. Do you want to replace it or keep both? replace/keep: ')
@@ -101,79 +113,123 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
 
             # Logic for sending to trash
             if replace_keep == 'replace':
-                send2trash.send2trash(downloads_path + '/' + folder_name + '/' + file)
-                shutil.move(str(downloads_path + '/' + file), str(downloads_path + '/' + folder_name))
+                send2trash.send2trash(downloads_path + '\\' + folder_name + '\\' + file)
+                shutil.move(str(downloads_path + '\\' + file), str(downloads_path + '\\' + folder_name))
                 files_sent2trash += 1
 
             # Regex to detect if file has the number, for example main_script(1).py
             else:
-                file_path = (downloads_path + '/' + folder_name + '/' + file)
+                file_path = (downloads_path + '\\' + folder_name + '\\' + file)
                 file_path_reversed = file_path[::-1]
                 digit_search = re.search('(\d+)', file_path_reversed)
                 digit_search_span = digit_search.span
                 if digit_search is not None and digit_search_span == '0':
                     digit_to_edit = digit_search.group()[::-1]
                     digit = digit_to_edit[1:-2]
-                    file_name = os.rename(downloads_path + '/' + file, downloads_path + '/' + split_tup[0] + f'({digit})' + extension)
-                    shutil.move(file_name, downloads_path + '/' + folder_name + '/' + split_tup[0] + f'({digit})' + extension)
+                    file_name = os.rename(downloads_path + '\\' + file, downloads_path + '\\' + split_tup[0] + f'({digit})' + extension)
+                    shutil.move(file_name, downloads_path + '\\' + folder_name + '\\' + split_tup[0] + f'({digit})' + extension)
                 else:
-                    os.rename(downloads_path + '/' + file, downloads_path + '/' + split_tup[0] + '(1)' + extension)
-                    shutil.move(downloads_path + '/' + split_tup[0] + '(1)' + extension, downloads_path + '/' + folder_name + '/' + split_tup[0] + '(1)' + extension)
+                    os.rename(downloads_path + '\\' + file, downloads_path + '\\' + split_tup[0] + '(1)' + extension)
+                    shutil.move(downloads_path + '\\' + split_tup[0] + '(1)' + extension, downloads_path + '\\' + folder_name + '\\' + split_tup[0] + '(1)' + extension)
 
     # Create a task to show a progress bar
 
     task_id = progress.add_task('[green]Sorting files...', total=len(downloads_list), completed_style='green')
 
     # Sort files to destination and use the replace_or_keep to not have
+    def run():
+        global files_sorted
+        global files_unsorted
+        global files_sent2trash
+        files_sent2trash = 0
+        files_sorted = 0
+        files_unsorted = 0
+        for file in downloads_list:
+            global split_tup
+            global extension
+            split_tup = os.path.splitext(file)
+            extension = split_tup[1]
+            extension = extension.replace('.', '')
+            category = None
+            progress.update(task_id, advance=1, refresh=True)
+            if extension.lower() in code_extensions:
+                replace_or_keep('Code', file)
+                category = 'Code'
 
-    for file in downloads_list:
-        split_tup = os.path.splitext(file)
-        extension = split_tup[1]
-        extension = extension.replace('.', '')
-        category = None
-        progress.update(task_id, advance=1, refresh=True)
-        time.sleep(0.1)
-        if extension.lower() in code_extensions:
-            replace_or_keep('Code', file)
-            category = 'Code'
+            elif extension.lower() in ebook_extensions:
+                replace_or_keep('Ebooks', file)
+                category = 'Ebook'
 
-        elif extension.lower() in ebook_extensions:
-            replace_or_keep('Ebooks', file)
-            category = 'Ebook'
+            elif extension.lower() in audio_extensions:
+                 replace_or_keep('Audio', file)
+                 category = 'Audio'
 
-        elif extension.lower() in audio_extensions:
-             replace_or_keep('Audio', file)
-             category = 'Audio'
+            elif extension.lower() in image_extensions:
+                 replace_or_keep('Images', file)
+                 category = 'Image'
 
-        elif extension.lower() in image_extensions:
-             replace_or_keep('Images', file)
-             category = 'Image'
+            elif extension.lower() in document_extensions:
+                replace_or_keep('Documents', file)
+                category = 'Document'
 
-        elif extension.lower() in document_extensions:
-            replace_or_keep('Documents', file)
-            category = 'Document'
+            elif extension.lower() in program_extensions:
+                replace_or_keep('Programs', file)
+                category = 'Program'
 
-        elif extension.lower() in program_extensions:
-            replace_or_keep('Programs', file)
-            category = 'Program'
+            elif extension.lower() in video_extensions:
+                replace_or_keep('Videos', file)
+                category = 'Video'
 
-        elif extension.lower() in video_extensions:
-            replace_or_keep('Videos', file)
-            category = 'Video'
+            elif extension.lower() in font_extensions:
+                replace_or_keep('Fonts', file)
+                category = 'Font'
 
-        elif extension.lower() in font_extensions:
-            replace_or_keep('Fonts', file)
-            category = 'Font'
+            elif extension.lower() in archive_extensions:
+                replace_or_keep('Archive', file)
+                category = 'Archive'
 
-        elif extension.lower() in archive_extensions:
-            replace_or_keep('Archive', file)
-            category = 'Archive'
+            if category is not None:
+                files_sorted += 1
+            else:
+                files_unsorted +=1
+        init(autoreset=True)
 
-        if category is not None:
-            files_sorted += 1
-        else:
-            files_unsorted +=1
-    init(autoreset=True)
+    def about():
+        about = """
+            # About
+
+            Downloads Sorter is a small python project made to help you with
+            organising your files. If you have an idea for a feature just submit
+            an issue on this projects Github page.
+            """
+        console = Console()
+        md = Markdown(about)
+        console.print(md)
+
+
+    def isvalid():
+        global user_input
+        # Keep asking for input until a valid input is provided
+        while user_input not in ['run', 'custom', 'about']:
+            user_input = input('Invalid input. Please enter "run", "custom", or "about": ')
+
+
+    def main_loop():
+        global user_input
+        continuity = True
+
+        while continuity:
+            user_input = input('Enter "run", "custom", or "about": ')
+            isvalid()  # Call the isvalid function to ensure valid input
+
+            if user_input == 'run':
+                run()  # Call the run() function
+                continuity = False  # Stop the loop
+            elif user_input == 'custom':
+                default_custom()  # Call the default_custom() function
+            elif user_input == 'about':
+                about()  # Call the about() function
+    main_loop()
 
     # Print statistics about what was done with files
     print(frg.GREEN + f'Files sorted: {files_sorted}')
@@ -181,3 +237,4 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
     print(f'Files sent to trash: {files_sent2trash}')
     print(frg.GREEN + 'Process ended succesfully')
     print(frg.WHITE + '(Note that folders count as unsorted files)')
+
