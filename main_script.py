@@ -78,8 +78,7 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
             custom = True
         # If user wants downloads
         if not custom:
-            downloads_path = str(Path.home() / "Downloads")
-            downloads_list = os.listdir(f'{downloads_path}')
+            pass
         # If user wants a custom path
         else:
             while True:
@@ -87,6 +86,8 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
                 if os.path.isdir(ask_for_path) is False:
                     pass
                 else:
+                    global downloads_path
+                    global downloads_list
                     downloads_path = str(ask_for_path)
                     downloads_list = os.listdir(f'{ask_for_path}')
                     break
@@ -94,13 +95,18 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
     # Create folders, first check if they exist to not have duplicates
 
     current_task = progress.add_task('[green]Creating folders...', total=len(folders), completed_style = 'green')
-    for folder_type in folders:
-        mypath = os.path.join(downloads_path, folder_type)
-        if not os.path.isdir(mypath):
 
-            os.mkdir(mypath)
+
+    # Create folders if they don't exist to avoid duplicates
+    def create_folders(folders, download_path):
+        for folder_type in folders:
+            mypath = os.path.join(download_path, folder_type)
+            if not os.path.isdir(mypath):
+                os.makedirs(mypath)  # Creates folder and necessary parent directories if needed
+                print(f"Created folder: {mypath}")
+            else:
+                print(f"Folder already exists: {mypath}")
         progress.update(current_task, advance=1)
-
 
     # Whole logic behind removing file duplicates if they exist in path or renaming the file you are moving.
 
@@ -230,6 +236,7 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
             isvalid()  # Call the isvalid function to ensure valid input
 
             if user_input == 'run':
+                create_folders(folders, downloads_path)
                 run()  # Call the run() function
                 continuity = False  # Stop the loop
             elif user_input == 'custom':
