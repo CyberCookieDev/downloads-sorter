@@ -1,10 +1,9 @@
-
 from pathlib import Path
 import os
 import shutil
 import send2trash
 import re
-from colorama import Fore as frg,init as init
+from colorama import Fore as frg, init as init
 from rich.progress import Progress
 from rich.console import Console
 from rich.markdown import Markdown
@@ -42,6 +41,8 @@ font_extensions = ['vfb', 'pfa', 'fnt', 'vlw', 'jfproj', 'woff', 'sfd', 'pfb']
 # Use progress for progress bars
 
 with Progress(auto_refresh=True, refresh_per_second=10) as progress:
+
+    # Added markdown to make text look nicer
     MARKDOWN = """
     # Downloads Sorter
 
@@ -57,10 +58,13 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
     console = Console()
     md = Markdown(MARKDOWN)
     console.print(md)
-    # Ask if user wants to sort downloads or custom path using some simple logic.
 
+    # Globally declaring downloads path and download list
     downloads_path = str(Path.home() / "Downloads")
     downloads_list = os.listdir(f'{downloads_path}')
+
+    # Ask if user wants to sort downloads or custom path using some simple logic.
+
     def default_custom():
         ask_if_custom = input('Sort downloads or some custom location? Type downloads for downloads and custom for custom. ')
         custom = True
@@ -99,6 +103,7 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
 
 
     # Whole logic behind removing file duplicates if they exist in path or renaming the file you are moving.
+
     def replace_or_keep(folder_name, file):
         global files_sent2trash
 
@@ -136,7 +141,7 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
 
     task_id = progress.add_task('[green]Sorting files...', total=len(downloads_list), completed_style='green')
 
-    # Sort files to destination and use the replace_or_keep to not have
+    # Sort files to destination and use the replace_or_keep to not have.
     def run():
         global files_sorted
         global files_unsorted
@@ -194,6 +199,8 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
                 files_unsorted +=1
         init(autoreset=True)
 
+        # About section
+
     def about():
         about = """
             # About
@@ -206,14 +213,14 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
         md = Markdown(about)
         console.print(md)
 
-
+    # Checking if user input is valid
     def isvalid():
         global user_input
         # Keep asking for input until a valid input is provided
         while user_input not in ['run', 'custom', 'about']:
             user_input = input('Invalid input. Please enter "run", "custom", or "about": ')
 
-
+# Loop to get users input to navigate the command menu
     def main_loop():
         global user_input
         continuity = True
@@ -237,4 +244,3 @@ with Progress(auto_refresh=True, refresh_per_second=10) as progress:
     print(f'Files sent to trash: {files_sent2trash}')
     print(frg.GREEN + 'Process ended succesfully')
     print(frg.WHITE + '(Note that folders count as unsorted files)')
-
